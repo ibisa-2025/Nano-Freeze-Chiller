@@ -25,14 +25,14 @@
 
 ## 🌐 Descripción general
 
-**NanoFreeze** es una solución IIoT de monitoreo energético y operativo para chillers y unidades de refrigeración industrial. El sistema captura datos de consumo eléctrico en tiempo real a través de sensores PZEM-016 vía Modbus RTU, los procesa en el gateway edge y los publica en la nube AWS IoT Core para análisis, almacenamiento y visualización.
+**NanoFreeze** es una solución IIoT de monitoreo energético y operativo para chillers y unidades de refrigeración industrial. El sistema captura datos de consumo eléctrico en tiempo real a través de sensores de corriente vía Modbus RTU, los procesa en el gateway edge y los publica en la nube AWS IoT Core para análisis, almacenamiento y visualización.
 
 El sistema opera de manera resiliente con buffer offline en SQLite para garantizar la integridad de datos ante pérdidas de conectividad.
 
 ### Características principales
 
 - ⚡ Medición energética en tiempo real (voltaje, corriente, potencia, energía, factor de potencia, frecuencia)
-- 🔌 Comunicación Modbus RTU/RS-485 con múltiples sensores PZEM-016
+- 🔌 Comunicación Modbus RTU/RS-485 con múltiples sensores de corriente
 - ☁️ Integración con AWS IoT Core via MQTT (TLS)
 - 🗄️ Buffer offline SQLite para operación sin conectividad
 - 📊 Dashboard Node-RED para visualización local
@@ -86,8 +86,8 @@ El sistema opera de manera resiliente con buffer offline en SQLite para garantiz
 |---|---|---|
 | Gateway Edge | Raspberry Pi / EdgeLogix-1145 | Procesamiento local y comunicación |
 | Orquestador | Node-RED v4.1.7 | Lógica de flujos, Modbus, MQTT |
-| Protocolo campo | Modbus RTU / RS-485 | Lectura de sensores PZEM-016 |
-| Sensor energía | PZEM-016 | Medición eléctrica por fase |
+| Protocolo campo | Modbus RTU / RS-485 | Lectura de sensores |
+| Sensor energía | Sensor | Medición eléctrica por fase |
 | Buffer offline | SQLite (`buffer_iot`) | Cola de mensajes sin conectividad |
 | Broker nube | AWS IoT Core | Recepción y enrutamiento MQTT |
 | Base de datos nube | DynamoDB + RDS MySQL | Persistencia histórica |
@@ -100,7 +100,7 @@ El sistema opera de manera resiliente con buffer offline en SQLite para garantiz
 
 - **Gateway:** Raspberry Pi 4B / EdgeLogix-1145 (o compatible)
 - **Adaptador RS-485:** Convertidor USB-RS485 (ej. CH340/FTDI)
-- **Sensores:** PZEM-016 (uno por fase/chiller)
+- **Sensores:** De corriente (uno por fase/chiller)
 - **Conectividad:** Ethernet o WiFi para acceso a AWS IoT Core
 - **Smart Plug:** ESP32 con firmware NanoFreeze
 
@@ -216,7 +216,7 @@ Registros:   0x0000 – 0x0009 (9 registros por sensor)
 Puertos:     /dev/ttyACM*, /dev/ttyUSB* (escaneo dinámico)
 ```
 
-### Registros PZEM-016
+### Registros de sensores de corriente
 
 | Registro | Parámetro | Unidad |
 |---|---|---|
