@@ -17,7 +17,6 @@
 - [Integración AWS IoT Core](#-integración-aws-iot-core)
 - [Almacenamiento offline (SQLite)](#-almacenamiento-offline-sqlite)
 - [Dashboard Node-RED](#-dashboard-node-red)
-- [ESP32 Smart Plug](#-esp32-smart-plug)
 - [Control de versiones](#-control-de-versiones)
 - [Licencia](#-licencia)
 
@@ -49,19 +48,15 @@ El sistema opera de manera resiliente con buffer offline en SQLite para garantiz
 │                    CAMPO (Edge)                              │
 │                                                              │
 │  ┌──────────────┐    RS-485     ┌─────────────────────────┐  │
-│  │  Sensor V #1 │◄─────────────►│                         │  │
+│  │  Sensor #1   │◄─────────────►│                         │  │
 │  └──────────────┘               │   EdgeLogix-1145        │  │
 │  ┌──────────────┐               │   (Raspberry Pi)        │  │
-│  │  Sensor V #2 │◄─────────────►│                         │  │
+│  │  Sensor #2   │◄─────────────►│                         │  │
 │  └──────────────┘  Modbus RTU   │  ┌─────────────────┐   │  │
 │  ┌──────────────┐               │  │  Node-RED v4.x  │   │  │
-│  │  Sensor V #N │◄─────────────►│  │  + SQLite buf.  │   │  │
+│  │  Sensor #N   │◄─────────────►│  │  + SQLite buf.  │   │  │
 │  └──────────────┘               │  └────────┬────────┘   │  │
 │                                 └───────────┼─────────────┘  │
-│  ┌──────────────┐                           │                 │
-│  │  ESP32 Smart │  WiFi/MQTT                │                 │
-│  │  Plug        │◄──────────────────────────┘                 │
-│  └──────────────┘                                            │
 └──────────────────────────────┬──────────────────────────────┘
                                │ MQTT / TLS (port 8883)
                                ▼
@@ -86,13 +81,12 @@ El sistema opera de manera resiliente con buffer offline en SQLite para garantiz
 |---|---|---|
 | Gateway Edge | Raspberry Pi / EdgeLogix-1145 | Procesamiento local y comunicación |
 | Orquestador | Node-RED v4.1.7 | Lógica de flujos, Modbus, MQTT |
-| Protocolo campo | Modbus RTU / RS-485 | Lectura de sensores |
-| Sensor energía | Sensor | Medición eléctrica por fase |
+| Protocolo campo | Modbus RTU / RS-485 | Lectura de sensores de corriente |
+| Sensor de corriente | Sensor energético por fase | Medición eléctrica por chiller |
 | Buffer offline | SQLite (`buffer_iot`) | Cola de mensajes sin conectividad |
 | Broker nube | AWS IoT Core | Recepción y enrutamiento MQTT |
 | Base de datos nube | DynamoDB + RDS MySQL | Persistencia histórica |
 | Backend | EC2 | API y procesamiento cloud |
-| Smart Plug | ESP32 | Control y monitoreo de cargas |
 
 ---
 
@@ -100,9 +94,8 @@ El sistema opera de manera resiliente con buffer offline en SQLite para garantiz
 
 - **Gateway:** Raspberry Pi 4B / EdgeLogix-1145 (o compatible)
 - **Adaptador RS-485:** Convertidor USB-RS485 (ej. CH340/FTDI)
-- **Sensores:** De corriente (uno por fase/chiller)
+- **Sensores de corriente:** Uno por fase/chiller, comunicación Modbus RTU
 - **Conectividad:** Ethernet o WiFi para acceso a AWS IoT Core
-- **Smart Plug:** ESP32 con firmware NanoFreeze
 
 ---
 
@@ -116,18 +109,8 @@ NanoFreeze/
 │   │   ├── mqtt_publisher.json
 │   │   ├── sqlite_buffer.json
 │   │   └── dashboard.json
-│   ├── scripts/
-│   │   └── install_iot.sh      # Instalador automático para SD card
 │   └── config/
 │       └── settings.js         # Configuración Node-RED
-│
-├── esp32/
-│   ├── src/
-│   │   ├── main.cpp            # Firmware principal ESP32
-│   │   ├── modes.h             # Modos: DAY_OPEN, NIGHT_OPT, RESTRICTED, FAILSAFE
-│   │   └── aws_iot.cpp         # Integración AWS IoT Core
-│   ├── data/                   # Archivos LittleFS (certificados, config)
-│   └── platformio.ini
 │
 ├── cloud/
 │   ├── iot-rules/              # Reglas AWS IoT Core
@@ -154,29 +137,10 @@ NanoFreeze/
   npm install node-red-contrib-modbus
   npm install node-red-node-sqlite
   npm install node-red-dashboard
-  npm install node-red-contrib-aws-iot-hub
+  npm install node-red-contrib-mqtt-broker
   ```
 - Certificados AWS IoT Core (provistos vía Fleet Provisioning)
 - Acceso a Internet desde el gateway (puerto 8883 TCP saliente)
-
-### Instalación automática (SD card / gateway nuevo)
-
-```bash
-# Copiar el script al gateway
-scp scripts/install_iot.sh ibisa@<IP_GATEWAY>:/home/ibisa/
-
-# Ejecutar instalador
-ssh ibisa@<IP_GATEWAY>
-chmod +x install_iot.sh
-sudo ./install_iot.sh
-```
-
-El script `install_iot.sh` realiza automáticamente:
-1. Restauración de flujos Node-RED
-2. Configuración de base de datos SQLite (`buffer_iot`)
-3. Instalación de dependencias npm
-4. Configuración del servicio systemd
-5. ⚠️ **Paso manual requerido:** Configuración de Tailscale VPN
 
 ### Fleet Provisioning (primer arranque)
 
@@ -192,18 +156,35 @@ Tras el provisioning, Node-RED se reinicia automáticamente via `systemctl`.
 
 ## ⚙️ Configuración
 
-### Variables de entorno Node-RED
+### Parámetros de conexión (Fleet Provisioning)
 
-Configurar en `settings.js` o como variables de entorno del sistema:
+Los siguientes parámetros son gestionados automáticamente por el proceso de Fleet Provisioning y no requieren configuración manual:
 
-| Variable | Descripción | Ejemplo |
+| Parámetro | Descripción | Ejemplo |
 |---|---|---|
-| `DEVICE_ID` | ID único del dispositivo | `NF-GW-001` |
+| `DEVICE_ID` | ID único del dispositivo (desde MAC `wlan0`) | `NF-GW-001` |
 | `AWS_IOT_ENDPOINT` | Endpoint AWS IoT Core | `xxxx.iot.us-east-1.amazonaws.com` |
 | `CERT_PATH` | Ruta a certificados TLS | `/home/pi/certificados/` |
-| `MODBUS_BAUD` | Velocidad Modbus RTU | `9600` |
-| `SLAVE_ID_MIN` | Slave ID inicio escaneo | `1` |
-| `SLAVE_ID_MAX` | Slave ID fin escaneo | `247` |
+
+### Configuración desde el Dashboard
+
+Los parámetros operativos se configuran directamente desde el dashboard de Node-RED por el técnico en campo, sin necesidad de editar archivos de configuración:
+
+| Parámetro | Descripción | Ejemplo |
+|---|---|---|
+| Baudrate | Velocidad de comunicación Modbus RTU | `9600` |
+| Puerto RS-485 | Puerto serie detectado automáticamente | `/dev/ttyUSB0` |
+| Slave IDs | IDs de los sensores a leer, separados por coma | `1,2,3` |
+
+#### Ingreso de Slave IDs
+
+El técnico ingresa los IDs de los sensores activos en el campo de texto habilitado en el dashboard, usando el formato:
+
+```
+1,2,3
+```
+
+El sistema parsea esta lista y realiza la lectura en serie de cada sensor en el orden indicado, publicando un mensaje MQTT independiente por cada uno.
 
 ### Parámetros Modbus RTU
 
@@ -216,7 +197,7 @@ Registros:   0x0000 – 0x0009 (9 registros por sensor)
 Puertos:     /dev/ttyACM*, /dev/ttyUSB* (escaneo dinámico)
 ```
 
-### Registros de sensores de corriente
+### Registros del sensor de corriente
 
 | Registro | Parámetro | Unidad |
 |---|---|---|
@@ -307,25 +288,6 @@ Visualizaciones disponibles:
 
 ---
 
-## 🔌 ESP32 Smart Plug
-
-El firmware del ESP32 Smart Plug opera en cuatro modos según horario y condiciones de red:
-
-| Modo | Descripción |
-|---|---|
-| `DAY_OPEN` | Operación normal diurna, cargas habilitadas |
-| `NIGHT_OPT` | Modo optimizado nocturno, control de ciclos |
-| `RESTRICTED` | Modo restringido, cargas limitadas |
-| `FAILSAFE` | Sin conectividad, operación autónoma segura |
-
-**Características del firmware:**
-- Buffer offline en LittleFS
-- OTA (Over-the-Air) updates
-- Registro automático en AWS IoT Core
-- Publicación de telemetría vía MQTT
-
----
-
 ## 🔄 Control de versiones
 
 Este repositorio usa integración Node-RED con GitHub en modo **Projects** (`mode: "auto"`), que realiza commits automáticos en cada Deploy de flujos.
@@ -348,9 +310,3 @@ git push origin main
 Este proyecto es propiedad de **IBISA** — todos los derechos reservados.
 
 Para consultas comerciales o de soporte técnico, contactar al equipo de desarrollo.
-
----
-
-<div align="center">
-  <sub>Desarrollado por el equipo IBISA</sub>
-</div>
