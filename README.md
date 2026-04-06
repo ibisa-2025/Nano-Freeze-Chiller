@@ -352,6 +352,6 @@ Para consultas comerciales o de soporte técnico, contactar al equipo de desarro
 ---
 
 <div align="center">
-  <sub>Desarrollado por el equipo IBISA · Zipaquirá, Colombia</sub>
+  <sub>Desarrollado por el equipo IBISA</sub>
 </div>
 # nanofreeze-nodered
