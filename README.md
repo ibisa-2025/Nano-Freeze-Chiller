@@ -49,13 +49,13 @@ El sistema opera de manera resiliente con buffer offline en SQLite para garantiz
 │                    CAMPO (Edge)                              │
 │                                                              │
 │  ┌──────────────┐    RS-485     ┌─────────────────────────┐  │
-│  │  PZEM-016 #1 │◄─────────────►│                         │  │
+│  │  Sensor V #1 │◄─────────────►│                         │  │
 │  └──────────────┘               │   EdgeLogix-1145        │  │
 │  ┌──────────────┐               │   (Raspberry Pi)        │  │
-│  │  PZEM-016 #2 │◄─────────────►│                         │  │
+│  │  Sensor V #2 │◄─────────────►│                         │  │
 │  └──────────────┘  Modbus RTU   │  ┌─────────────────┐   │  │
 │  ┌──────────────┐               │  │  Node-RED v4.x  │   │  │
-│  │  PZEM-016 #N │◄─────────────►│  │  + SQLite buf.  │   │  │
+│  │  Sensor V #N │◄─────────────►│  │  + SQLite buf.  │   │  │
 │  └──────────────┘               │  └────────┬────────┘   │  │
 │                                 └───────────┼─────────────┘  │
 │  ┌──────────────┐                           │                 │
@@ -352,5 +352,5 @@ Para consultas comerciales o de soporte técnico, contactar al equipo de desarro
 ---
 
 <div align="center">
-  <sub>Desarrollado por el equipo IBISA · Zipaquirá, Colombia</sub>
+  <sub>Desarrollado por el equipo IBISA</sub>
 </div>
