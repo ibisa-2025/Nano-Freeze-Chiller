@@ -5,7 +5,8 @@
     "dependencies": {
         "node-red-contrib-influxdb": "0.7.0",
         "node-red-contrib-modbus": "5.45.2",
-        "node-red-dashboard": "3.6.6"
+        "node-red-dashboard": "3.6.6",
+        "node-red-node-mysql": "3.0.0"
     },
     "node-red": {
         "settings": {
