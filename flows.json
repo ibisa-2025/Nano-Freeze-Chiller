@@ -1,6 +1,6 @@
 [
     {
-        "id": "934857fc6df36ba6",
+        "id": "3dc4c61caf7502b1",
         "type": "tab",
         "label": "UI",
         "disabled": false,
@@ -8,13 +8,13 @@
         "env": []
     },
     {
-        "id": "c65f7edc8c317f3f",
+        "id": "4ce0f61391b08363",
         "type": "tab",
         "label": "Ibisa Fleet Provisioning",
         "disabled": false
     },
     {
-        "id": "7f230b831953d37b",
+        "id": "8c631bbdbacc835b",
         "type": "tab",
         "label": "Guardar datos en buffer",
         "disabled": false,
@@ -22,7 +22,7 @@
         "env": []
     },
     {
-        "id": "d0a0b58d43b094c9",
+        "id": "34ae6ace5a3ec19e",
         "type": "tab",
         "label": "Control",
         "disabled": false,
@@ -861,9 +861,9 @@
         "rejectUnauthorized": true
     },
     {
-        "id": "29cb0e6a48c2f7cf",
+        "id": "c69e8363dcbcfbfa",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Verify ID Device",
         "func": "// Obtener el device_code ingresado\nlet deviceCode = msg.payload.trim();\n\nif (!deviceCode) {\n    node.status({fill: \"red\", shape: \"ring\", text: \"ID vacío\"});\n    return [null, null];  // No envía nada\n}\n\n// Consulta SQL\nmsg.topic = `\n    SELECT name, status, energy_capability, temperature_capability \n    FROM device \n    WHERE device_code = ?\n`;\n\nmsg.payload = [deviceCode];  // Parámetro seguro contra inyección SQL\n\nreturn msg;",
         "outputs": 1,
@@ -876,14 +876,14 @@
         "y": 80,
         "wires": [
             [
-                "3d8a0c17cec6f7e8"
+                "5702e55eabe7e16e"
             ]
         ]
     },
     {
-        "id": "abcd58f00e92ce77",
+        "id": "38092247e6afacac",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Save Capabilities",
         "func": "flow.set(msg.topic, msg.payload === 'true');\n// Trigger update to datos\nreturn msg;",
         "outputs": 1,
@@ -895,14 +895,14 @@
         "y": 220,
         "wires": [
             [
-                "a253fae88c66b24d"
+                "a06847e6f7eda21e"
             ]
         ]
     },
     {
-        "id": "a253fae88c66b24d",
+        "id": "a06847e6f7eda21e",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Update Datos",
         "func": "var msgs = [];\nif (flow.get('energy_capability')) {\n    msgs.push({payload: '100 kWh'}); // Placeholder\n} else {\n    msgs.push({payload: ''});\n}\nif (flow.get('temperature_capability')) {\n    msgs.push({payload: '25°C'}); // Placeholder\n} else {\n    msgs.push({payload: ''});\n}\nreturn [msgs[0], msgs[1]];",
         "outputs": 2,
@@ -918,9 +918,9 @@
         ]
     },
     {
-        "id": "81df7455591c80f6",
+        "id": "b752bd5811afd4d1",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Save Modbus Type",
         "func": "flow.set('modbus_type', msg.payload);\nmsg.modbus_type = msg.payload;\nreturn msg;",
         "outputs": 1,
@@ -932,16 +932,16 @@
         "y": 320,
         "wires": [
             [
-                "4fb04971651bdb88"
+                "fb063a0a24189bd0"
             ]
         ]
     },
     {
-        "id": "86114a456c54a61e",
+        "id": "5b2a5fc19a361a3b",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Save Modbus Config",
-        "func": "if (msg.payload && msg.payload.type === \"RTU\") {\n\n    const puertoDesdeScan = (global.get(\"modbus_rtu_config\") || {}).serialPort;\n    const puerto = msg.payload.port || puertoDesdeScan || \"/dev/ttyACM0\";\n\n    const cfg = {\n        connectorType:  \"serial\",\n        serialPort:     puerto,\n        serialBaudrate: Number(msg.payload.baud) || 9600,\n        serialParity:   msg.payload.parity || \"none\",\n        serialDatabits: Number(msg.payload.data_bits) || 8,\n        serialStopbits: Number(msg.payload.stop_bits) || 1,\n        fc:       Number(msg.payload.fc) || 4,\n        unitId:   Number(msg.payload.slave_id) || 1,\n        address:  Number(msg.payload.address) || 0,\n        quantity: Number(msg.payload.quantity) || 10\n    };\n\n    global.set(\"modbus_rtu_config\", cfg);\n\n    const connectorPayload = {\n        connectorType:  \"serial\",\n        serialPort:     cfg.serialPort,\n        serialBaudrate: cfg.serialBaudrate,\n        serialDatabits: cfg.serialDatabits,\n        serialStopbits: cfg.serialStopbits,\n        serialParity:   cfg.serialParity,\n        serialType:     \"RTU-BUFFERED\"\n    };\n\n    node.status({fill:\"green\", shape:\"dot\", text:\"RTU OK → \" + cfg.serialPort + \" @ \" + cfg.serialBaudrate});\n    node.warn(\"Config Modbus guardada:\");\n    node.warn(cfg);\n\n    // Salida 1 → Flex Connector (inmediato)\n    // Salida 2 → trigger primera lectura (después del delay)\n    return [{ payload: connectorPayload }, { payload: {} }];\n\n} else {\n    node.warn(\"Payload no es config RTU válida: \" + JSON.stringify(msg.payload));\n    node.status({fill:\"grey\", shape:\"ring\", text:\"No RTU\"});\n    return null;\n}\n",
+        "func": "if (msg.payload && msg.payload.type === \"RTU\") {\n\n    const puertoDesdeScan = (global.get(\"modbus_rtu_config\") || {}).serialPort;\n    const puerto = msg.payload.port || puertoDesdeScan || \"/dev/ttyACM0\";\n\n    // slave_id puede venir como \"1,2,3\" o como número suelto\n    const rawSlaves = (msg.payload.slave_id || \"1\").toString().trim();\n    const slaveIds = rawSlaves\n        .split(\",\")\n        .map(s => parseInt(s.trim(), 10))\n        .filter(n => !isNaN(n) && n >= 1 && n <= 247);\n\n    if (slaveIds.length === 0) slaveIds.push(1);\n\n    const cfg = {\n        connectorType:  \"serial\",\n        serialPort:     puerto,\n        serialBaudrate: Number(msg.payload.baud) || 9600,\n        serialParity:   msg.payload.parity || \"none\",\n        serialDatabits: Number(msg.payload.data_bits) || 8,\n        serialStopbits: Number(msg.payload.stop_bits) || 1,\n        fc:       Number(msg.payload.fc) || 4,\n        slaveIds: slaveIds,\n        address:  Number(msg.payload.address) || 0,\n        quantity: Number(msg.payload.quantity) || 10\n    };\n\n    global.set(\"modbus_rtu_config\", cfg);\n\n    const connectorPayload = {\n        connectorType:  \"serial\",\n        serialPort:     cfg.serialPort,\n        serialBaudrate: cfg.serialBaudrate,\n        serialDatabits: cfg.serialDatabits,\n        serialStopbits: cfg.serialStopbits,\n        serialParity:   cfg.serialParity,\n        serialType:     \"RTU-BUFFERED\"\n    };\n\n    node.status({fill:\"green\", shape:\"dot\", text:\"RTU OK → \" + cfg.serialPort + \" @ \" + cfg.serialBaudrate + \" | Slaves: \" + slaveIds.join(\",\")});\n    node.warn(\"Config Modbus guardada:\");\n    node.warn(cfg);\n\n    return [{ payload: connectorPayload }, { payload: {} }];\n\n} else {\n    node.warn(\"Payload no es config RTU válida: \" + JSON.stringify(msg.payload));\n    node.status({fill:\"grey\", shape:\"ring\", text:\"No RTU\"});\n    return null;\n}\n",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
@@ -952,17 +952,17 @@
         "y": 500,
         "wires": [
             [
-                "f43d9da2b3ff6cc4"
+                "98e2fd3974b3b286"
             ],
             [
-                "f29f84c00f182318"
+                "2a03f69076ab856f"
             ]
         ]
     },
     {
-        "id": "1a91282c597b8dc7",
+        "id": "5795c21f7fefab7e",
         "type": "debug",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "debug desde template",
         "active": true,
         "tosidebar": true,
@@ -977,9 +977,9 @@
         "wires": []
     },
     {
-        "id": "358ce7e7e33accca",
+        "id": "e7abc49c550383a4",
         "type": "debug",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "debug desde flex connector",
         "active": true,
         "tosidebar": true,
@@ -994,25 +994,25 @@
         "wires": []
     },
     {
-        "id": "720250b4231acc1a",
+        "id": "3ec0c7657f1fc2cb",
         "type": "status",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Status Modbus",
         "scope": [
-            "f43d9da2b3ff6cc4"
+            "98e2fd3974b3b286"
         ],
         "x": 100,
         "y": 880,
         "wires": [
             [
-                "84189eb270ac5504"
+                "544886f58d954265"
             ]
         ]
     },
     {
-        "id": "84189eb270ac5504",
+        "id": "544886f58d954265",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Obtener estado modbus",
         "func": "let textoOriginal = msg.status?.text || \"desconocido\";\nlet mensaje = textoOriginal;\nlet color = \"grey\";\n\n// Mapeo de estados comunes del modbus-flex-connector\nswitch (textoOriginal.toLowerCase()) {\n    case \"connected\":\n    case \"active\":\n        mensaje = \"Conectado\";\n        color = \"green\";\n        break;\n    case \"connecting\":\n    case \"reconnecting\":\n        mensaje = \"Conectando...\";\n        color = \"orange\";\n        break;\n    case \"disconnected\":\n    case \"failed\":\n    case \"error\":\n        mensaje = \"Error / Desconectado\";\n        color = \"red\";\n        break;\n    default:\n        mensaje = textoOriginal;\n        color = \"grey\";\n}\n\n// Guardar global para uso en otros nodos si necesitas\nglobal.set(\"conexionModbus\", { texto: mensaje, color: color, original: textoOriginal });\n\n// Preparar para el dashboard\nmsg.payload = mensaje;\nmsg.color = color;\n\nreturn msg;",
         "outputs": 1,
@@ -1025,14 +1025,14 @@
         "y": 880,
         "wires": [
             [
-                "f4f326e053ea799a"
+                "269f641791ab3db2"
             ]
         ]
     },
     {
-        "id": "3b33b46f0eeee1af",
+        "id": "94cb60b973af600d",
         "type": "inject",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Trigger Lectura cada 10s",
         "props": [],
         "repeat": "10",
@@ -1044,17 +1044,17 @@
         "y": 600,
         "wires": [
             [
-                "f078df35a15c52bd",
-                "f33277c99fc9133c"
+                "e796db98d09647e9",
+                "9193767a956cd76c"
             ]
         ]
     },
     {
-        "id": "589066c7d10a2358",
+        "id": "db23a2358f97be7f",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Preparar Lectura Modbus",
-        "func": "const cfg = global.get(\"modbus_rtu_config\") || {};\n\nif (!cfg.serialPort) {\n    node.status({fill:\"red\", shape:\"ring\", text:\"Esperando config...\"});\n    return null;\n}\n\nmsg.payload = {\n    fc:       cfg.fc || 4,\n    unitid:   cfg.unitId || 1,\n    address:  cfg.address || 0,\n    quantity: cfg.quantity || 10\n};\n\nnode.status({fill:\"blue\", shape:\"dot\", text:\"FC\" + msg.payload.fc + \" → \" + cfg.serialPort});\nreturn msg;",
+        "func": "const cfg = global.get(\"modbus_rtu_config\") || {};\n\nif (!cfg.serialPort) {\n    node.status({fill:\"red\", shape:\"ring\", text:\"Esperando config...\"});\n    return null;\n}\n\nconst slaveIds = cfg.slaveIds && cfg.slaveIds.length > 0 ? cfg.slaveIds : [cfg.unitId || 1];\n\n// Lanzar una petición por cada esclavo en ráfaga\n// El modbus-flex-getter las encola y resuelve en secuencia rápida\nconst msgs = slaveIds.map(id => ({\n    payload: {\n        fc:       cfg.fc || 4,\n        unitid:   id,\n        address:  cfg.address || 0,\n        quantity: cfg.quantity || 10\n    }\n}));\n\nnode.status({fill:\"blue\", shape:\"dot\", text:\"FC\" + (cfg.fc||4) + \" → Slaves [\" + slaveIds.join(\",\") + \"] @ \" + cfg.serialPort});\n\n// Array de mensajes = el nodo los envía todos a la cola del modbus-flex-getter\nreturn [msgs];\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -1065,17 +1065,17 @@
         "y": 600,
         "wires": [
             [
-                "082e43bd5417b56a",
-                "3d4583a3d3be2a27"
+                "08e6e1b2db267026",
+                "8bd6b7ef0737e61b"
             ]
         ]
     },
     {
-        "id": "5904a01c4f2d94a0",
+        "id": "8ff7f7207f3a3520",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Formatear Datos Crudos",
-        "func": "if (!msg.payload || !Array.isArray(msg.payload) || msg.payload.length < 10) {\n    node.status({fill:\"red\", shape:\"ring\", text:\"Sin datos válidos\"});\n    return null;\n}\n\nconst deviceId = global.get(\"dispositivoId\") || null;\n\nif (!deviceId) {\n    node.status({fill:\"yellow\", shape:\"ring\", text:\"Falta ID dispositivo\"});\n    return null;\n}\n\nconst data = msg.payload;\nconst voltage     = data[0] / 10.0;\nconst current     = ((data[2] << 16) | data[1]) / 1000.0;\nconst power       = ((data[4] << 16) | data[3]) / 10.0;\nconst energy      = (data[6] << 16) | data[5];\nconst frequency   = data[7] / 10.0;\nconst powerFactor = data[8] / 100.0;\nconst alarm       = data[9] === 0xFFFF;\n\nmsg.topic   = `NanoFreeze/${deviceId}/Sensores`;\nmsg.payload = {\n    timestamp:   new Date().toISOString(),\n    deviceId:    deviceId,\n    power:       power,\n    energy_wh:   energy,\n    energy_kwh:  parseFloat((energy / 1000).toFixed(3)),\n    voltage:     voltage,\n    current:     current,\n    frequency:   frequency,\n    powerFactor: powerFactor,\n    alarm:       alarm\n};\n\nnode.status({fill:\"green\", shape:\"dot\", text:`${deviceId} → ${power}W`});\nreturn msg;",
+        "func": "if (!msg.payload || !Array.isArray(msg.payload) || msg.payload.length < 10) {\n    node.status({fill:\"red\", shape:\"ring\", text:\"Sin datos válidos\"});\n    return null;\n}\n\nconst deviceId = global.get(\"dispositivoId\") || null;\nif (!deviceId) {\n    node.status({fill:\"yellow\", shape:\"ring\", text:\"Falta ID dispositivo\"});\n    return null;\n}\n\nconst cfg      = global.get(\"modbus_rtu_config\") || {};\nconst data     = msg.payload;\nconst slaveIds = cfg.slaveIds && cfg.slaveIds.length > 0 ? cfg.slaveIds : [1];\n\n// Slave que respondió este mensaje\nconst slaveId = (msg.modbusRequest && msg.modbusRequest.unitid)\n             || (msg.payload && msg.payload.unitid)\n             || cfg.slaveIds[0]\n             || 1;\n\n// Acumular lecturas por esclavo\nlet acumulado = global.get(\"lecturas_chillers\") || {};\n\n// IDs 1-9 → energía/potencia  |  IDs 10-30 → temperatura\nconst isEnergy      = slaveId >= 1  && slaveId <= 9;\nconst isTemperature = slaveId >= 10 && slaveId <= 30;\n\nif (isEnergy) {\n    const power      = ((data[4] << 16) | data[3]) / 10.0;\n    const energy_wh  = (data[6] << 16) | data[5];\n    acumulado[slaveId] = {\n        tipo:        \"energia\",\n        potencia:    parseFloat(power.toFixed(2)),\n        energia_kwh: parseFloat((energy_wh / 1000).toFixed(3))\n    };\n} else if (isTemperature) {\n    const temp = data[0] / 10.0;\n    acumulado[slaveId] = {\n        tipo:  \"temperatura\",\n        valor: parseFloat(temp.toFixed(2))\n    };\n} else {\n    acumulado[slaveId] = { tipo: \"desconocido\" };\n}\n\nglobal.set(\"lecturas_chillers\", acumulado);\n\n// Esperar a que lleguen todos los esclavos configurados\nconst todosPresentes = slaveIds.every(id => acumulado[id] !== undefined);\nif (!todosPresentes) {\n    const pendientes = slaveIds.filter(id => !acumulado[id]).join(\",\");\n    node.status({fill:\"blue\", shape:\"dot\", text:\"Slave \" + slaveId + \" OK | Falta: \" + pendientes});\n    return null;\n}\n\n// ── Construir payload final ───────────────────────────────────────────────────\nconst energiaObj  = {};\nconst potenciaObj = {};\nconst tempObj     = {};\n\nlet faseE = 1;\nlet faseT = 1;\n\nslaveIds.forEach(id => {\n    const entry = acumulado[id];\n    if (!entry) return;\n\n    if (entry.tipo === \"energia\") {\n        const keyE = \"fase\" + faseE;\n        energiaObj[keyE]  = entry.energia_kwh;\n        potenciaObj[keyE] = entry.potencia;\n        faseE++;\n    } else if (entry.tipo === \"temperatura\") {\n        const keyT = \"t\" + faseT;\n        tempObj[keyT] = entry.valor;\n        faseT++;\n    }\n});\n\n// Si no hay ningún sensor del tipo, agregar \"NO VALUE\" en fase1/t1\nif (Object.keys(energiaObj).length === 0) {\n    energiaObj[\"fase1\"]  = \"NO VALUE\";\n    potenciaObj[\"fase1\"] = \"NO VALUE\";\n}\nif (Object.keys(tempObj).length === 0) {\n    tempObj[\"t1\"] = \"NO VALUE\";\n}\n\n// Limpiar acumulado para la próxima ronda\nglobal.set(\"lecturas_chillers\", {});\n\nmsg.topic   = `NanoFreeze/${deviceId}/datos_chillers`;\nmsg.payload = {\n    timestamp:   new Date().toISOString(),\n    temperatura: tempObj,\n    energia:     energiaObj,\n    potencia:    potenciaObj\n};\n\nnode.status({fill:\"green\", shape:\"dot\", text:deviceId + \" → \" + (faseE-1) + \" fase(s) energía, \" + (faseT-1) + \" temp\"});\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -1086,16 +1086,16 @@
         "y": 600,
         "wires": [
             [
-                "b9cf51927bc693c5",
-                "218795410d980ca0",
-                "51b58e41d53df3c7"
+                "9c878ac2c94270fb",
+                "15c94f94f9af5782",
+                "3b4d8758662a9c65"
             ]
         ]
     },
     {
-        "id": "327b5e637ec0ab34",
+        "id": "e842483f5d88d74a",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Procesar respuesta DB",
         "func": "if (msg.payload && msg.payload.length > 0) {\n    let row = msg.payload[0];  // Primera fila (debería ser única por device_code)\n\n    // Enviar a los textos\n    let nameMsg = { payload: row.name || \"No encontrado\" };\n    let statusMsg = { payload: row.status || \"Desconocido\" };\n\n    // Enviar a switches (true/false como booleano)\n    let energyMsg = { topic: \"energy_capability\", payload: !!row.energy_capability };\n    let tempMsg = { topic: \"temperature_capability\", payload: !!row.temperature_capability };\n\n    node.status({fill: \"green\", shape: \"dot\", text: \"Device encontrado\"});\n\n    return [nameMsg, statusMsg, energyMsg, tempMsg];\n} else {\n    node.status({fill: \"yellow\", shape: \"ring\", text: \"Device no encontrado\"});\n\n    return [\n        { payload: \"No encontrado\" },   // name\n        { payload: \"No encontrado\" },   // status\n        { topic: \"energy_capability\", payload: false },\n        { topic: \"temperature_capability\", payload: false }\n    ];\n}",
         "outputs": 4,
@@ -1108,23 +1108,23 @@
         "y": 60,
         "wires": [
             [
-                "378c875b6cb14aa5"
+                "865626ea68e1d558"
             ],
             [
-                "40649b1aec1c9ed2"
+                "0f98b5f99fc76459"
             ],
             [
-                "73daaa30bf12abf0"
+                "029b6ed6ee3c39c6"
             ],
             [
-                "09376ff91b542d64"
+                "22567bad3db50b79"
             ]
         ]
     },
     {
-        "id": "417f06f1c633178d",
+        "id": "f4fed37877fbefdc",
         "type": "change",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Obtener ID",
         "rules": [
             {
@@ -1144,15 +1144,15 @@
         "y": 60,
         "wires": [
             [
-                "29cb0e6a48c2f7cf",
-                "6a8b2f3753d870a0"
+                "c69e8363dcbcfbfa",
+                "5144ca396d39f0a3"
             ]
         ]
     },
     {
-        "id": "6a8b2f3753d870a0",
+        "id": "5144ca396d39f0a3",
         "type": "debug",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Obtener ID",
         "active": true,
         "tosidebar": true,
@@ -1167,9 +1167,9 @@
         "wires": []
     },
     {
-        "id": "b4162c8a05649291",
+        "id": "515f99c82d41f87e",
         "type": "inject",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "",
         "props": [
             {
@@ -1191,14 +1191,14 @@
         "y": 100,
         "wires": [
             [
-                "417f06f1c633178d"
+                "f4fed37877fbefdc"
             ]
         ]
     },
     {
-        "id": "c2ec65b51350cb53",
+        "id": "ed1ee796778451bb",
         "type": "mqtt out",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Subir a IoT Core",
         "topic": "",
         "qos": "",
@@ -1214,26 +1214,26 @@
         "wires": []
     },
     {
-        "id": "f8d42c45ff976e06",
+        "id": "231defa7e1c6d264",
         "type": "status",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Status MQTT",
         "scope": [
-            "c2ec65b51350cb53"
+            "ed1ee796778451bb"
         ],
         "x": 490,
         "y": 780,
         "wires": [
             [
-                "94205bff43c99f43",
-                "579d1a72957582d8"
+                "27be92f659fadbc3",
+                "6dfb4b75c78fb38f"
             ]
         ]
     },
     {
-        "id": "94205bff43c99f43",
+        "id": "27be92f659fadbc3",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Obtener estado MQTT",
         "func": "let textoOriginal = msg.status?.text || \"desconocido\";\nlet mensaje = \"Desconocido\";\nlet color = \"grey\";\n\n// Mapeo de claves comunes de estado MQTT (i18n)\nswitch (textoOriginal.toLowerCase()) {\n    case \"node-red:common.status.connected\":\n        mensaje = \"Conectado\";\n        color = \"green\";\n        break;\n\n    case \"node-red:common.status.connecting\":\n    case \"node-red:common.status.reconnecting\":\n        mensaje = \"Conectando...\";\n        color = \"orange\";\n        break;\n\n    case \"node-red:common.status.disconnected\":\n        mensaje = \"Desconocido\";\n        color = \"red\";\n        break;\n\n    default:\n        if (textoOriginal.toLowerCase().includes(\"error\") || \n            textoOriginal.toLowerCase().includes(\"failed\") || \n            textoOriginal.toLowerCase().includes(\"refused\")) {\n            mensaje = \"Error de conexión\";\n            color = \"red\";\n        } else {\n            mensaje = textoOriginal;\n            color = \"grey\";\n        }\n}\n\n// Guardamos el estado para el dashboard y el router\nglobal.set(\"conexionMQTT\", { \n    texto: mensaje, \n    color: color, \n    original: textoOriginal \n});\n\n// ────────────────────────────────────────────────\n//           DETECTAR RECONEXIÓN\n// ────────────────────────────────────────────────\nconst estadoAnterior = flow.get(\"mqtt_estado_anterior\") || \"desconectado\";\nconst estadoActual = textoOriginal.toLowerCase();\n\nflow.set(\"mqtt_estado_anterior\", estadoActual);\n\n// Solo cuando PASA A CONECTADO\nlet dispararBuffer = false;\nif (estadoActual.includes(\"connected\") && !estadoAnterior.includes(\"connected\")) {\n    dispararBuffer = true;\n    node.status({fill:\"blue\", shape:\"ring\", text:\"Reconectado → enviando buffer\"});\n}\n\n// Guardamos también mqtt_online (para compatibilidad con tu router actual)\nglobal.set(\"mqtt_online\", mensaje === \"Conectado\");\n\n// Salidas:\n// 1 = para dashboard (siempre)\n// 2 = para disparar lectura de buffer (solo al reconectar)\nreturn [\n    { payload: mensaje, color: color },           // salida 1 → dashboard\n    dispararBuffer ? { topic: `\n        SELECT id, uuid, payload, intentos\n        FROM buffer_iot\n        WHERE enviado = 0\n        ORDER BY id ASC\n        LIMIT 1\n    ` } : null                                      // salida 2 → sqlite leer pendiente\n];",
         "outputs": 2,
@@ -1246,17 +1246,17 @@
         "y": 800,
         "wires": [
             [
-                "0a053bda851ddfd0"
+                "92862c80dd3535fb"
             ],
             [
-                "0a70ac134170a0cf"
+                "304e3a6408bc65f6"
             ]
         ]
     },
     {
-        "id": "51b58e41d53df3c7",
+        "id": "3b4d8758662a9c65",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Router Online/Offline",
         "func": "let online = global.get(\"mqtt_online\") || false;\n\nnode.warn(\"TOPIC: \" + msg.topic);\nnode.warn(\"PAYLOAD: \" + JSON.stringify(msg.payload, null, 2));\nnode.warn(\"online: \" + online);\n\nif (online) {\n    node.warn(\"ENVIANDO POR SALIDA 1\");\n    // Guardar copia del mensaje en flow context para comparar\n    flow.set(\"ultimo_mensaje_enviado\", {\n        timestamp: Date.now(),\n        topic: msg.topic,\n        payload: JSON.parse(JSON.stringify(msg.payload))\n    });\n    return [msg, null];\n} else {\n    node.warn(\"GUARDANDO EN BUFFER\");\n    msg.topic = \"INSERT INTO buffer_iot (uuid, payload) VALUES (?, ?)\";\n    msg.payload = [\n        Date.now().toString(),\n        JSON.stringify(msg.payload)\n    ];\n    return [null, msg];\n}",
         "outputs": 2,
@@ -1269,18 +1269,18 @@
         "y": 640,
         "wires": [
             [
-                "c2ec65b51350cb53",
-                "731a9d5a19136f92"
+                "ed1ee796778451bb",
+                "6e65a6a69c8009fe"
             ],
             [
-                "a9a76bb0a630b2b5"
+                "2b05765dc7fc64af"
             ]
         ]
     },
     {
-        "id": "a9a76bb0a630b2b5",
+        "id": "2b05765dc7fc64af",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Preparar INSERT",
         "func": "if (!msg.responseBuffer || !msg.responseBuffer.data) {\n    return null;\n}\n\nconst data = {\n    timestamp: new Date().toISOString(),\n    deviceId: \"DEV-10-1\",\n    registro1: msg.responseBuffer.data[0] || 0,\n    registro2: msg.responseBuffer.data[1] || 0,\n    registro3: msg.responseBuffer.data[2] || 0,\n    registro4: msg.responseBuffer.data[3] || 0\n};\n\nconst uuid = Date.now().toString();\nconst json = JSON.stringify(data).replace(/'/g, \"''\");\n\nmsg.topic = `\nINSERT INTO buffer_iot (uuid, payload)\nVALUES ('${uuid}', '${json}')\n`;\n\nreturn msg;",
         "outputs": 1,
@@ -1293,28 +1293,28 @@
         "y": 700,
         "wires": [
             [
-                "3d8f487978a48885",
-                "623d17611e4f53df"
+                "ae106ed93ce283c8",
+                "98ae9dd549b14d2d"
             ]
         ]
     },
     {
-        "id": "0a70ac134170a0cf",
+        "id": "304e3a6408bc65f6",
         "type": "link out",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Link → Buffer",
         "mode": "link",
         "links": [
-            "84ed2e6ed6f5b67d"
+            "9cfd51e1c0793a54"
         ],
         "x": 955,
         "y": 880,
         "wires": []
     },
     {
-        "id": "731a9d5a19136f92",
+        "id": "6e65a6a69c8009fe",
         "type": "debug",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "debug Router Online/Offline",
         "active": true,
         "tosidebar": true,
@@ -1329,9 +1329,9 @@
         "wires": []
     },
     {
-        "id": "579d1a72957582d8",
+        "id": "6dfb4b75c78fb38f",
         "type": "debug",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "debug Status MQTT",
         "active": true,
         "tosidebar": true,
@@ -1346,9 +1346,9 @@
         "wires": []
     },
     {
-        "id": "623d17611e4f53df",
+        "id": "98ae9dd549b14d2d",
         "type": "debug",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "debug Preparar INSERT",
         "active": true,
         "tosidebar": true,
@@ -1363,9 +1363,9 @@
         "wires": []
     },
     {
-        "id": "f33277c99fc9133c",
+        "id": "9193767a956cd76c",
         "type": "switch",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Funciones",
         "property": "procesamiento_activo",
         "propertyType": "global",
@@ -1384,17 +1384,17 @@
         "y": 600,
         "wires": [
             [
-                "589066c7d10a2358"
+                "db23a2358f97be7f"
             ],
             [
-                "a1b142936638e920"
+                "18a53bfbcebf7742"
             ]
         ]
     },
     {
-        "id": "a1b142936638e920",
+        "id": "18a53bfbcebf7742",
         "type": "debug",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "debug Funciones (UI)",
         "active": true,
         "tosidebar": true,
@@ -1409,9 +1409,9 @@
         "wires": []
     },
     {
-        "id": "f078df35a15c52bd",
+        "id": "e796db98d09647e9",
         "type": "debug",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "debug Trigger",
         "active": true,
         "tosidebar": true,
@@ -1426,9 +1426,9 @@
         "wires": []
     },
     {
-        "id": "3d4583a3d3be2a27",
+        "id": "8bd6b7ef0737e61b",
         "type": "debug",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "debug Preparar Lectura Modbus",
         "active": true,
         "tosidebar": true,
@@ -1443,9 +1443,9 @@
         "wires": []
     },
     {
-        "id": "8acbcaf8294bf729",
+        "id": "09516965bd81ffac",
         "type": "ui_dropdown",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "",
         "label": "Tipo Modbus",
         "tooltip": "",
@@ -1476,14 +1476,14 @@
         "y": 340,
         "wires": [
             [
-                "81df7455591c80f6"
+                "b752bd5811afd4d1"
             ]
         ]
     },
     {
-        "id": "60201ff91527eb9c",
+        "id": "2b93bdbacf46d2f4",
         "type": "ui_button",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Conexion Modbus",
         "group": "dee1869cf73040de",
         "order": 3,
@@ -1504,14 +1504,14 @@
         "y": 980,
         "wires": [
             [
-                "afc395a8f52fbefc"
+                "bebc280b2b04a853"
             ]
         ]
     },
     {
-        "id": "7cd0b52fe3badec7",
+        "id": "7bc24c5e34dfb58c",
         "type": "ui_button",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Conexion Nube",
         "group": "dee1869cf73040de",
         "order": 1,
@@ -1532,14 +1532,14 @@
         "y": 1060,
         "wires": [
             [
-                "afc395a8f52fbefc"
+                "bebc280b2b04a853"
             ]
         ]
     },
     {
-        "id": "5e60b24789625fdf",
+        "id": "7ec3cce34dc9b67d",
         "type": "ui_button",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Configuracion IoT",
         "group": "dee1869cf73040de",
         "order": 2,
@@ -1560,14 +1560,14 @@
         "y": 1120,
         "wires": [
             [
-                "afc395a8f52fbefc"
+                "bebc280b2b04a853"
             ]
         ]
     },
     {
-        "id": "618fbee508e1a3f4",
+        "id": "0b61e1dfbf58f425",
         "type": "ui_button",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Activacion IoT",
         "group": "dee1869cf73040de",
         "order": 4,
@@ -1588,14 +1588,14 @@
         "y": 1180,
         "wires": [
             [
-                "afc395a8f52fbefc"
+                "bebc280b2b04a853"
             ]
         ]
     },
     {
-        "id": "0feec9946151b03c",
+        "id": "7761a48d9ed13fc2",
         "type": "ui_button",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "",
         "group": "dee1869cf73040de",
         "order": 5,
@@ -1616,14 +1616,14 @@
         "y": 1240,
         "wires": [
             [
-                "afc395a8f52fbefc"
+                "bebc280b2b04a853"
             ]
         ]
     },
     {
-        "id": "73daaa30bf12abf0",
+        "id": "029b6ed6ee3c39c6",
         "type": "ui_switch",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "",
         "label": "Capacidad energética",
         "tooltip": "",
@@ -1650,14 +1650,14 @@
         "y": 180,
         "wires": [
             [
-                "abcd58f00e92ce77"
+                "38092247e6afacac"
             ]
         ]
     },
     {
-        "id": "09376ff91b542d64",
+        "id": "22567bad3db50b79",
         "type": "ui_switch",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "",
         "label": "Capacidad de temperatura",
         "tooltip": "",
@@ -1684,14 +1684,14 @@
         "y": 260,
         "wires": [
             [
-                "abcd58f00e92ce77"
+                "38092247e6afacac"
             ]
         ]
     },
     {
-        "id": "743eeaf57e364f6c",
+        "id": "f2747f910cb8e6f9",
         "type": "ui_text_input",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "",
         "label": "ID Dispositivo",
         "tooltip": "Ingrese ID y verifique en DB",
@@ -1710,14 +1710,14 @@
         "y": 40,
         "wires": [
             [
-                "417f06f1c633178d"
+                "f4fed37877fbefdc"
             ]
         ]
     },
     {
-        "id": "378c875b6cb14aa5",
+        "id": "865626ea68e1d558",
         "type": "ui_text",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "group": "identificacion_group_id",
         "order": 2,
         "width": 0,
@@ -1736,9 +1736,9 @@
         "wires": []
     },
     {
-        "id": "40649b1aec1c9ed2",
+        "id": "0f98b5f99fc76459",
         "type": "ui_text",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "group": "identificacion_group_id",
         "order": 3,
         "width": 0,
@@ -1757,9 +1757,9 @@
         "wires": []
     },
     {
-        "id": "afc395a8f52fbefc",
+        "id": "bebc280b2b04a853",
         "type": "ui_ui_control",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "",
         "events": "all",
         "x": 580,
@@ -1769,9 +1769,9 @@
         ]
     },
     {
-        "id": "f4f326e053ea799a",
+        "id": "269f641791ab3db2",
         "type": "ui_template",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "group": "modbus_config_group_id",
         "name": "Estado de la conexion",
         "order": 7,
@@ -1790,15 +1790,15 @@
         ]
     },
     {
-        "id": "4fb04971651bdb88",
+        "id": "fb063a0a24189bd0",
         "type": "ui_template",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "group": "modbus_config_group_id",
         "name": "Modbus Fields",
         "order": 4,
         "width": 0,
         "height": 0,
-        "format": "<div layout=\"column\" ng-if=\"msg.modbus_type === 'RTU'\">\n\n    <md-input-container class=\"md-block\">\n        <label>Baud Rate</label>\n        <md-select ng-model=\"item.rtu_baud\">\n            <md-option value=\"9600\">9600</md-option>\n            <md-option value=\"19200\">19200</md-option>\n            <md-option value=\"38400\">38400</md-option>\n            <md-option value=\"57600\">57600</md-option>\n            <md-option value=\"115200\">115200</md-option>\n        </md-select>\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Slave ID</label>\n        <input ng-model=\"item.rtu_slave_id\" type=\"number\" min=\"1\" max=\"247\" placeholder=\"1\">\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Parity</label>\n        <md-select ng-model=\"item.rtu_parity\">\n            <md-option value=\"none\">None</md-option>\n            <md-option value=\"even\">Even</md-option>\n            <md-option value=\"odd\">Odd</md-option>\n        </md-select>\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Data Bits</label>\n        <md-select ng-model=\"item.rtu_data_bits\">\n            <md-option value=\"8\">8</md-option>\n            <md-option value=\"7\">7</md-option>\n        </md-select>\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Stop Bits</label>\n        <md-select ng-model=\"item.rtu_stop_bits\">\n            <md-option value=\"1\">1</md-option>\n            <md-option value=\"2\">2</md-option>\n        </md-select>\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Dirección Inicial (Address)</label>\n        <input ng-model=\"item.address\" type=\"number\" min=\"0\" placeholder=\"0\">\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Cantidad de Registros</label>\n        <input ng-model=\"item.quantity\" type=\"number\" min=\"1\" max=\"125\" placeholder=\"10\">\n    </md-input-container>\n\n    <md-button class=\"md-raised md-primary\" ng-click=\"send({\n        payload: {\n            type: 'RTU',\n            baud: item.rtu_baud,\n            slave_id: item.rtu_slave_id,\n            parity: item.rtu_parity,\n            data_bits: item.rtu_data_bits,\n            stop_bits: item.rtu_stop_bits,\n            address: item.address,\n            quantity: item.quantity\n        }\n    })\">\n        Guardar RTU\n    </md-button>\n\n</div>",
+        "format": "<div layout=\"column\" ng-if=\"msg.modbus_type === 'RTU'\">\n\n    <md-input-container class=\"md-block\">\n        <label>Baud Rate</label>\n        <md-select ng-model=\"item.rtu_baud\">\n            <md-option value=\"9600\">9600</md-option>\n            <md-option value=\"19200\">19200</md-option>\n            <md-option value=\"38400\">38400</md-option>\n            <md-option value=\"57600\">57600</md-option>\n            <md-option value=\"115200\">115200</md-option>\n        </md-select>\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Slave ID</label>\n        <input ng-model=\"item.rtu_slave_id\" type=\"text\" placeholder=\"Ej: 1 o 1,2,3\">\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Parity</label>\n        <md-select ng-model=\"item.rtu_parity\">\n            <md-option value=\"none\">None</md-option>\n            <md-option value=\"even\">Even</md-option>\n            <md-option value=\"odd\">Odd</md-option>\n        </md-select>\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Data Bits</label>\n        <md-select ng-model=\"item.rtu_data_bits\">\n            <md-option value=\"8\">8</md-option>\n            <md-option value=\"7\">7</md-option>\n        </md-select>\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Stop Bits</label>\n        <md-select ng-model=\"item.rtu_stop_bits\">\n            <md-option value=\"1\">1</md-option>\n            <md-option value=\"2\">2</md-option>\n        </md-select>\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Dirección Inicial (Address)</label>\n        <input ng-model=\"item.address\" type=\"number\" min=\"0\" placeholder=\"0\">\n    </md-input-container>\n\n    <md-input-container class=\"md-block\">\n        <label>Cantidad de Registros</label>\n        <input ng-model=\"item.quantity\" type=\"number\" min=\"1\" max=\"125\" placeholder=\"10\">\n    </md-input-container>\n\n    <md-button class=\"md-raised md-primary\" ng-click=\"send({\n        payload: {\n            type: 'RTU',\n            baud: item.rtu_baud,\n            slave_id: item.rtu_slave_id,\n            parity: item.rtu_parity,\n            data_bits: item.rtu_data_bits,\n            stop_bits: item.rtu_stop_bits,\n            address: item.address,\n            quantity: item.quantity\n        }\n    })\">\n        Guardar RTU\n    </md-button>\n\n</div>",
         "storeOutMessages": true,
         "fwdInMessages": true,
         "resendOnRefresh": true,
@@ -1808,15 +1808,15 @@
         "y": 420,
         "wires": [
             [
-                "86114a456c54a61e",
-                "1a91282c597b8dc7"
+                "5b2a5fc19a361a3b",
+                "5795c21f7fefab7e"
             ]
         ]
     },
     {
-        "id": "0a053bda851ddfd0",
+        "id": "92862c80dd3535fb",
         "type": "ui_template",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "group": "016de6dc82a05fe5",
         "name": "Estado MQTT",
         "order": 2,
@@ -1835,9 +1835,9 @@
         ]
     },
     {
-        "id": "082e43bd5417b56a",
+        "id": "08e6e1b2db267026",
         "type": "modbus-flex-getter",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Leer Datos Crudos",
         "showStatusActivities": true,
         "showErrors": true,
@@ -1855,15 +1855,15 @@
         "y": 600,
         "wires": [
             [
-                "5904a01c4f2d94a0"
+                "8ff7f7207f3a3520"
             ],
             []
         ]
     },
     {
-        "id": "f43d9da2b3ff6cc4",
+        "id": "98e2fd3974b3b286",
         "type": "modbus-flex-connector",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Conector Modbus Dinámico",
         "maxReconnectsPerMinute": 4,
         "emptyQueue": false,
@@ -1876,14 +1876,14 @@
         "y": 480,
         "wires": [
             [
-                "358ce7e7e33accca"
+                "e7abc49c550383a4"
             ]
         ]
     },
     {
-        "id": "3d8f487978a48885",
+        "id": "ae106ed93ce283c8",
         "type": "sqlite",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "mydb": "e49a1121dd1bbc8c",
         "sqlquery": "msg.topic",
         "sql": "",
@@ -1895,23 +1895,23 @@
         ]
     },
     {
-        "id": "3d8a0c17cec6f7e8",
+        "id": "5702e55eabe7e16e",
         "type": "mysql",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "mydb": "1534001d1511dfb8",
         "name": "Conexion DB",
         "x": 790,
         "y": 60,
         "wires": [
             [
-                "327b5e637ec0ab34"
+                "e842483f5d88d74a"
             ]
         ]
     },
     {
-        "id": "aa1fc8829ff03cc5",
+        "id": "d97adf15bfbfe162",
         "type": "inject",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Escanear puertos al arrancar",
         "props": [],
         "repeat": "",
@@ -1923,14 +1923,14 @@
         "y": 400,
         "wires": [
             [
-                "fa2fa9389967d0e5"
+                "e92541043e248d39"
             ]
         ]
     },
     {
-        "id": "b6c934da102973c3",
+        "id": "c995eece8b83a544",
         "type": "ui_button",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Escanear puertos",
         "group": "modbus_config_group_id",
         "order": 6,
@@ -1951,14 +1951,14 @@
         "y": 480,
         "wires": [
             [
-                "fa2fa9389967d0e5"
+                "e92541043e248d39"
             ]
         ]
     },
     {
-        "id": "fa2fa9389967d0e5",
+        "id": "e92541043e248d39",
         "type": "exec",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "command": "ls /dev/ttyACM* /dev/ttyUSB* /dev/ttyS0 2>/dev/null",
         "addpay": false,
         "append": "",
@@ -1971,16 +1971,16 @@
         "y": 500,
         "wires": [
             [
-                "6f6dd2424d6898bb"
+                "1a01c1f5c478db0e"
             ],
             [],
             []
         ]
     },
     {
-        "id": "6f6dd2424d6898bb",
+        "id": "1a01c1f5c478db0e",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Formatear lista de puertos",
         "func": "const puertos = msg.payload\n    .trim()\n    .split(\"\\n\")\n    .filter(p => p.length > 0)\n    .map(p => ({ label: p.trim(), value: p.trim() }));\n\nif (puertos.length === 0) {\n    puertos.push({ label: \"Sin puertos detectados\", value: \"\" });\n}\n\nmsg.payload = puertos;\nmsg.topic = \"options\";\n\nglobal.set(\"puertos_disponibles\", puertos);\nnode.status({fill:\"green\", shape:\"dot\", text: puertos.length + \" puerto(s) detectado(s)\"});\nreturn msg;",
         "outputs": 1,
@@ -1993,15 +1993,15 @@
         "y": 440,
         "wires": [
             [
-                "c6dc6f8a0743ea7e",
-                "8e96950907358fed"
+                "7628e35a2770bc53",
+                "c09762295c758fe7"
             ]
         ]
     },
     {
-        "id": "785e5a3577a39772",
+        "id": "486212c84a926ac2",
         "type": "function",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "Guardar puerto seleccionado",
         "func": "if (msg.topic === \"options\") return null;\n\nconst cfg = global.get(\"modbus_rtu_config\") || {};\ncfg.serialPort = msg.payload;\nglobal.set(\"modbus_rtu_config\", cfg);\n\nnode.status({fill:\"blue\", shape:\"dot\", text: \"Puerto: \" + msg.payload});\nnode.warn(\"Puerto guardado: \" + msg.payload);\nreturn null;",
         "outputs": 1,
@@ -2017,9 +2017,9 @@
         ]
     },
     {
-        "id": "b9cf51927bc693c5",
+        "id": "9c878ac2c94270fb",
         "type": "ui_text",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "group": "modbus_config_group_id",
         "order": 2,
         "width": 0,
@@ -2038,9 +2038,9 @@
         "wires": []
     },
     {
-        "id": "218795410d980ca0",
+        "id": "15c94f94f9af5782",
         "type": "ui_text",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "group": "modbus_config_group_id",
         "order": 3,
         "width": 0,
@@ -2059,9 +2059,9 @@
         "wires": []
     },
     {
-        "id": "c6dc6f8a0743ea7e",
+        "id": "7628e35a2770bc53",
         "type": "debug",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "debug Formatear lista de puertos",
         "active": true,
         "tosidebar": true,
@@ -2076,9 +2076,9 @@
         "wires": []
     },
     {
-        "id": "8e96950907358fed",
+        "id": "c09762295c758fe7",
         "type": "ui_template",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "group": "modbus_config_group_id",
         "name": "Puerto serial",
         "order": 5,
@@ -2094,14 +2094,14 @@
         "y": 380,
         "wires": [
             [
-                "785e5a3577a39772"
+                "486212c84a926ac2"
             ]
         ]
     },
     {
-        "id": "f29f84c00f182318",
+        "id": "2a03f69076ab856f",
         "type": "delay",
-        "z": "934857fc6df36ba6",
+        "z": "3dc4c61caf7502b1",
         "name": "",
         "pauseType": "delay",
         "timeout": "3",
@@ -2119,14 +2119,14 @@
         "y": 540,
         "wires": [
             [
-                "589066c7d10a2358"
+                "db23a2358f97be7f"
             ]
         ]
     },
     {
-        "id": "529eeddfa5b85c98",
+        "id": "a1fbf5b30511597c",
         "type": "exec",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "command": "cat /sys/class/net/wlan0/address",
         "addpay": false,
         "append": "",
@@ -2137,16 +2137,16 @@
         "y": 100,
         "wires": [
             [
-                "65e66ffe0cd6e99b"
+                "897694aca3245e33"
             ],
             [],
             []
         ]
     },
     {
-        "id": "65e66ffe0cd6e99b",
+        "id": "897694aca3245e33",
         "type": "function",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "Formatear MAC",
         "func": "let mac = msg.payload.toString().trim().replace(/:/g,'').toUpperCase();\nflow.set('serial', mac);\nreturn { topic: \"$aws/certificates/create/json\", payload: \"\" };",
         "outputs": 1,
@@ -2154,15 +2154,15 @@
         "y": 100,
         "wires": [
             [
-                "0da99441c7c2ce0f",
-                "ec4d94feeab7fa95"
+                "446e310fac30afce",
+                "ce03adadceb3be76"
             ]
         ]
     },
     {
-        "id": "0da99441c7c2ce0f",
+        "id": "446e310fac30afce",
         "type": "mqtt out",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "AWS OUT",
         "topic": "",
         "qos": "1",
@@ -2178,9 +2178,9 @@
         "wires": []
     },
     {
-        "id": "f38b74d45b894579",
+        "id": "3da008655fe9aeab",
         "type": "mqtt in",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "Cert Create Accepted",
         "topic": "$aws/certificates/create/json/accepted",
         "qos": "1",
@@ -2193,14 +2193,14 @@
         "y": 220,
         "wires": [
             [
-                "0ea85728306af1f0"
+                "510db383c8dc68de"
             ]
         ]
     },
     {
-        "id": "0ea85728306af1f0",
+        "id": "510db383c8dc68de",
         "type": "function",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "Enviar Provision",
         "func": "flow.set('deviceCert', msg.payload.certificatePem);\nflow.set('deviceKey', msg.payload.privateKey);\n\nlet serial = flow.get('serial');\n\nreturn {\n    topic: \"$aws/provisioning-templates/IbisaTemplate/provision/json\",\n    payload: {\n        certificateOwnershipToken: msg.payload.certificateOwnershipToken,\n        parameters: {\n            SerialNumber: serial\n        }\n    }\n};",
         "outputs": 1,
@@ -2208,15 +2208,15 @@
         "y": 220,
         "wires": [
             [
-                "0da99441c7c2ce0f",
-                "558764fd7d55735d"
+                "446e310fac30afce",
+                "02bc00f4db2fea46"
             ]
         ]
     },
     {
-        "id": "d931505ae05d8871",
+        "id": "6e2e5d61e1d60017",
         "type": "mqtt in",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "Provision Accepted",
         "topic": "$aws/provisioning-templates/IbisaTemplate/provision/json/accepted",
         "qos": "1",
@@ -2229,14 +2229,14 @@
         "y": 340,
         "wires": [
             [
-                "ddc57507f89a5db9"
+                "3b978e1e97a2db35"
             ]
         ]
     },
     {
-        "id": "ddc57507f89a5db9",
+        "id": "3b978e1e97a2db35",
         "type": "function",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "Guardar Certificados",
         "func": "let cert = flow.get('deviceCert');\nlet key = flow.get('deviceKey');\nlet thingName = msg.payload.thingName;\n\nreturn [\n    { payload: cert, filename: \"/home/pi/certificados/device.pem.crt\" },\n    { payload: key, filename: \"/home/pi/certificados/device.private.key\" },\n    { payload: thingName, filename: \"/home/pi/certificados/thing-name.txt\" }\n];",
         "outputs": 3,
@@ -2249,20 +2249,20 @@
         "y": 340,
         "wires": [
             [
-                "cbc164173bdc4141"
+                "c7ffdb3cb5b31efe"
             ],
             [
-                "293278a25035e101"
+                "35c3acd0d4930afe"
             ],
             [
-                "79bd527cb00b05cb"
+                "00edf91ab7115da3"
             ]
         ]
     },
     {
-        "id": "ec4d94feeab7fa95",
+        "id": "ce03adadceb3be76",
         "type": "debug",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "debug 2",
         "active": true,
         "tosidebar": true,
@@ -2276,9 +2276,9 @@
         "wires": []
     },
     {
-        "id": "558764fd7d55735d",
+        "id": "02bc00f4db2fea46",
         "type": "debug",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "debug 3",
         "active": true,
         "tosidebar": true,
@@ -2292,9 +2292,9 @@
         "wires": []
     },
     {
-        "id": "cbc164173bdc4141",
+        "id": "c7ffdb3cb5b31efe",
         "type": "file",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "cert",
         "filename": "filename",
         "filenameType": "msg",
@@ -2306,15 +2306,15 @@
         "y": 320,
         "wires": [
             [
-                "a2469e60f1cc399c",
-                "65c1d9b6991fa5cb"
+                "8c5b866c5240377d",
+                "05e29e44cc1293c0"
             ]
         ]
     },
     {
-        "id": "293278a25035e101",
+        "id": "35c3acd0d4930afe",
         "type": "file",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "key",
         "filename": "filename",
         "filenameType": "msg",
@@ -2326,15 +2326,15 @@
         "y": 360,
         "wires": [
             [
-                "2373283eb82e67e4",
-                "65c1d9b6991fa5cb"
+                "e6dd206c15049ad9",
+                "05e29e44cc1293c0"
             ]
         ]
     },
     {
-        "id": "79bd527cb00b05cb",
+        "id": "00edf91ab7115da3",
         "type": "file",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "thing",
         "filename": "filename",
         "filenameType": "msg",
@@ -2346,15 +2346,15 @@
         "y": 400,
         "wires": [
             [
-                "ec915141e68fba27",
-                "65c1d9b6991fa5cb"
+                "801209d6e438f53a",
+                "05e29e44cc1293c0"
             ]
         ]
     },
     {
-        "id": "a2469e60f1cc399c",
+        "id": "8c5b866c5240377d",
         "type": "debug",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "debug 4",
         "active": true,
         "tosidebar": true,
@@ -2368,9 +2368,9 @@
         "wires": []
     },
     {
-        "id": "2373283eb82e67e4",
+        "id": "e6dd206c15049ad9",
         "type": "debug",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "debug 5",
         "active": true,
         "tosidebar": true,
@@ -2384,9 +2384,9 @@
         "wires": []
     },
     {
-        "id": "ec915141e68fba27",
+        "id": "801209d6e438f53a",
         "type": "debug",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "debug 6",
         "active": true,
         "tosidebar": true,
@@ -2400,9 +2400,9 @@
         "wires": []
     },
     {
-        "id": "52c1f1266ec927f0",
+        "id": "d242848bc753d618",
         "type": "exec",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "command": "sudo systemctl restart nodered",
         "addpay": "",
         "append": "",
@@ -2420,9 +2420,9 @@
         ]
     },
     {
-        "id": "65c1d9b6991fa5cb",
+        "id": "05e29e44cc1293c0",
         "type": "delay",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "",
         "pauseType": "delay",
         "timeout": "5",
@@ -2440,14 +2440,14 @@
         "y": 540,
         "wires": [
             [
-                "52c1f1266ec927f0"
+                "d242848bc753d618"
             ]
         ]
     },
     {
-        "id": "18ac093d6b3bb4d5",
+        "id": "bbd737da8c92e2f6",
         "type": "ui_button",
-        "z": "c65f7edc8c317f3f",
+        "z": "4ce0f61391b08363",
         "name": "",
         "group": "016de6dc82a05fe5",
         "order": 1,
@@ -2468,30 +2468,30 @@
         "y": 100,
         "wires": [
             [
-                "529eeddfa5b85c98"
+                "a1fbf5b30511597c"
             ]
         ]
     },
     {
-        "id": "84ed2e6ed6f5b67d",
+        "id": "9cfd51e1c0793a54",
         "type": "link in",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Link In: disparar al reconectar",
         "links": [
-            "0a70ac134170a0cf"
+            "304e3a6408bc65f6"
         ],
         "x": 65,
         "y": 60,
         "wires": [
             [
-                "f431562473529684"
+                "13fea3e570a2d55c"
             ]
         ]
     },
     {
-        "id": "8bd7b4e7628bf531",
+        "id": "e60a8f8db502c951",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Disparar lectura de pendiente",
         "func": "node.warn(\"Reconexión detectada → esperando 4 segundos para estabilizar MQTT\");\nreturn new Promise(resolve => {\n    setTimeout(() => {\n        resolve([{\n            topic: `SELECT id, uuid, payload, intentos FROM buffer_iot WHERE enviado = 0 ORDER BY id ASC LIMIT 1`\n        }]);\n    }, 4000);\n});",
         "outputs": 1,
@@ -2504,15 +2504,15 @@
         "y": 80,
         "wires": [
             [
-                "ed490a29eaba9106",
-                "23055284ded1282e"
+                "acfeb69bba44b514",
+                "bc2063078532e6ba"
             ]
         ]
     },
     {
-        "id": "ddf9509a2d1c1ea0",
+        "id": "1fc0e26471f764f4",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Preparar y enviar pendiente",
         "func": "node.warn(\"Preparar y enviar pendiente - entrada recibida\");\n\nif (msg.payload && Array.isArray(msg.payload) && msg.payload.length > 0) {\n    const row = msg.payload[0];\n    node.warn(\"Pendiente encontrado ID: \" + row.id);\n\n    msg.buffer_id   = row.id;\n    msg.intentos    = row.intentos || 0;\n\n    try {\n        msg.payload = JSON.parse(row.payload);\n    } catch (err) {\n        node.warn(\"Error parseando JSON del buffer → ID \" + row.id + \" → se descarta\");\n        return [null, null, {\n            topic: \"SELECT id, uuid, payload, intentos FROM buffer_iot WHERE enviado = 0 ORDER BY id ASC LIMIT 1\"\n        }];\n    }\n\n    msg.topic = `NanoFreeze/${msg.payload.deviceId}/Sensores`;\n\n    node.warn(\"Listo para enviar a MQTT:\");\n    node.warn(msg.payload);\n    node.warn(\"MQTT topic: \" + msg.topic);\n    node.warn(\"📤 Enviando a MQTT y a marcar OK\");\n\n    return [msg, msg, null];\n\n} else {\n    node.warn(\"No hay más pendientes. Iniciando limpieza de registros enviados...\");\n\n    return [null, null, {\n        topic: \"DELETE FROM buffer_iot WHERE enviado = 1\",\n        clean_trigger: true,\n        clean_reason: \"buffer_vaciado\"\n    }];\n}",
         "outputs": 3,
@@ -2525,21 +2525,21 @@
         "y": 120,
         "wires": [
             [
-                "4001d00643170df1",
-                "d6b18e9640b3c49c"
+                "41d991c1154cef53",
+                "69c2f5cb5525ddde"
             ],
             [
-                "4a665d4353e4f55e"
+                "476493f70f40e1a1"
             ],
             [
-                "fd47843a109b5ef5"
+                "914438834f85fb45"
             ]
         ]
     },
     {
-        "id": "4001d00643170df1",
+        "id": "41d991c1154cef53",
         "type": "mqtt out",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "MQTT out",
         "topic": "",
         "qos": "1",
@@ -2555,9 +2555,9 @@
         "wires": []
     },
     {
-        "id": "4a665d4353e4f55e",
+        "id": "476493f70f40e1a1",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Marcar como enviado OK",
         "func": "if (typeof msg.buffer_id === \"undefined\" || isNaN(msg.buffer_id)) {\n    node.warn(\"ABORT: buffer_id inválido o ausente → \" + JSON.stringify(msg.buffer_id));\n    return null;\n}\n\nconst id = Number(msg.buffer_id);     // fuerza a número\nconst intentos = Number(msg.intentos || 0);\n\nif (isNaN(id) || id <= 0) {\n    node.error(\"ID inválido después de conversión: \" + msg.buffer_id);\n    return null;\n}\n\nnode.warn(`Intentando marcar como enviado → ID=${id} (tipo=${typeof id}), intentos=${intentos}`);\n\nmsg.topic = `UPDATE buffer_iot \n             SET enviado = 1, \n                 fecha_envio = CURRENT_TIMESTAMP, \n                 intentos = ${intentos} \n             WHERE id = ${id}`;\nmsg.payload = []; \n\nnode.warn(\"UPDATE preparado → payload: \" + JSON.stringify(msg.payload));\n\nreturn msg;",
         "outputs": 1,
@@ -2570,32 +2570,32 @@
         "y": 360,
         "wires": [
             [
-                "162d37e7aff52e7e",
-                "0056486dd6267673"
+                "5800df34d35df998",
+                "0c25b0530d7600dd"
             ]
         ]
     },
     {
-        "id": "6fec9cdd538bd063",
+        "id": "e90e974b733dcd7a",
         "type": "catch",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Catch errores MQTT buffer",
         "scope": [
-            "4001d00643170df1"
+            "41d991c1154cef53"
         ],
         "uncaught": false,
         "x": 250,
         "y": 560,
         "wires": [
             [
-                "ff25eaf32d6bfd74"
+                "4cc1ddb9d9ed83f5"
             ]
         ]
     },
     {
-        "id": "ff25eaf32d6bfd74",
+        "id": "4cc1ddb9d9ed83f5",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Manejar fallo de envío",
         "func": "node.warn(\"Fallo al enviar pendiente → ID: \" + (msg.buffer_id || \"desconocido\"));\n\nlet intentos = (msg.intentos || 0) + 1;\n\nif (!msg.buffer_id) {\n    node.warn(\"No hay buffer_id → no se puede actualizar intentos\");\n} else {\n    msg.topic = `UPDATE buffer_iot SET intentos = ? WHERE id = ?`;\n    msg.payload = [intentos, parseInt(msg.buffer_id, 10)];\n}\n\nnode.warn(\"Intentos ahora: \" + intentos + \" → continuamos con el siguiente\");\n\nreturn {\n    topic: `SELECT id, uuid, payload, intentos FROM buffer_iot WHERE enviado = 0 ORDER BY id ASC LIMIT 1`\n};\n",
         "outputs": 1,
@@ -2608,15 +2608,15 @@
         "y": 560,
         "wires": [
             [
-                "1c116d921149756c",
-                "350fe727dcd89057"
+                "bcc8a95bc0dbbe87",
+                "c4cf37e9579eac5f"
             ]
         ]
     },
     {
-        "id": "d07834d869cc67c9",
+        "id": "b9512f3ce22d85bf",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Leer 1 pendiente",
         "active": true,
         "tosidebar": true,
@@ -2631,9 +2631,9 @@
         "wires": []
     },
     {
-        "id": "a63b6c18df82b6c7",
+        "id": "e7121736218470ef",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Actualizar buffer ok",
         "active": true,
         "tosidebar": true,
@@ -2648,9 +2648,9 @@
         "wires": []
     },
     {
-        "id": "d6b18e9640b3c49c",
+        "id": "69c2f5cb5525ddde",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Preparar y enviar pendiente",
         "active": true,
         "tosidebar": true,
@@ -2665,9 +2665,9 @@
         "wires": []
     },
     {
-        "id": "0056486dd6267673",
+        "id": "0c25b0530d7600dd",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Marcar como enviado OK",
         "active": true,
         "tosidebar": true,
@@ -2682,9 +2682,9 @@
         "wires": []
     },
     {
-        "id": "ed490a29eaba9106",
+        "id": "acfeb69bba44b514",
         "type": "delay",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "",
         "pauseType": "delay",
         "timeout": "5",
@@ -2702,14 +2702,14 @@
         "y": 120,
         "wires": [
             [
-                "0c5c3d039ad05f55"
+                "f1a86d3d5eace821"
             ]
         ]
     },
     {
-        "id": "be37a5656861c393",
+        "id": "fa745438782d1c86",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Actualizar buffer fallo",
         "active": true,
         "tosidebar": true,
@@ -2724,9 +2724,9 @@
         "wires": []
     },
     {
-        "id": "350fe727dcd89057",
+        "id": "c4cf37e9579eac5f",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Manejar fallo de envío",
         "active": true,
         "tosidebar": true,
@@ -2741,9 +2741,9 @@
         "wires": []
     },
     {
-        "id": "2cd286591176619e",
+        "id": "b47c57c43cf79dde",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Continuar lectura pendiente",
         "func": "node.warn(\"Resultado recibido para confirmación:\");\n\nif (!msg.payload || msg.payload.length === 0) {\n    node.warn(\"No hay más pendientes - FIN DEL PROCESO\");\n    return null;\n}\n\nconst row = msg.payload[0];\nnode.warn(`ID encontrado: ${row.id}, intentos: ${row.intentos}`);\n\nreturn msg;",
         "outputs": 1,
@@ -2756,14 +2756,14 @@
         "y": 1120,
         "wires": [
             [
-                "ce5d6807f3e700e1"
+                "24c63cafba4fafc7"
             ]
         ]
     },
     {
-        "id": "ce5d6807f3e700e1",
+        "id": "24c63cafba4fafc7",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Continuar lectura pendiente",
         "active": true,
         "tosidebar": true,
@@ -2778,9 +2778,9 @@
         "wires": []
     },
     {
-        "id": "18714b1ae3fb85eb",
+        "id": "fe0afb572864e2e8",
         "type": "delay",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "",
         "pauseType": "delay",
         "timeout": "1",
@@ -2798,14 +2798,14 @@
         "y": 1100,
         "wires": [
             [
-                "2cd286591176619e"
+                "b47c57c43cf79dde"
             ]
         ]
     },
     {
-        "id": "1ef3ade4d080f7ae",
+        "id": "c3cb2da861c60976",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Confirmar marcado como enviado",
         "func": "const id = msg.buffer_id;\n\nif (id === undefined) {\n    node.warn(\"❌ buffer_id no presente, abortando\");\n    return null;\n}\n\nnode.warn(`✅ UPDATE ejecutado para ID ${id}, confiando en que fue exitoso`);\n\nreturn {\n    topic: \"SELECT id, uuid, payload, intentos FROM buffer_iot WHERE enviado = 0 ORDER BY id ASC LIMIT 1\"\n};",
         "outputs": 1,
@@ -2821,9 +2821,9 @@
         ]
     },
     {
-        "id": "c2db3c766a687e02",
+        "id": "72b760cce1d7130e",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Leer estado enviado",
         "active": true,
         "tosidebar": true,
@@ -2838,9 +2838,9 @@
         "wires": []
     },
     {
-        "id": "c9be339735451eca",
+        "id": "92dc5db8c45961ab",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Verificar registro",
         "func": "const id = msg.buffer_id ? parseInt(msg.buffer_id, 10) : null;\n\nif (!id) {\n    node.warn(\"❌ No hay buffer_id válido para verificar\");\n    return null;\n}\n\nnode.warn(`Verificando ID ${id} (tipo: ${typeof id})`);\n\nif (!msg.payload || msg.payload.length === 0) {\n    node.warn(`❌ No se encontró el ID ${id} en la BD`);\n    \n    return {\n        buffer_id: id,\n        diagnostic: true,\n        topic: \"SELECT id FROM buffer_iot ORDER BY id\"\n    };\n}\n\nconst estado = msg.payload[0].enviado;\nnode.warn(`✅ ID ${id} encontrado, enviado = ${estado}`);\n\nif (estado === 1) {\n    return {\n        topic: \"SELECT id, uuid, payload, intentos FROM buffer_iot WHERE enviado = 0 ORDER BY id ASC LIMIT 1\"\n    };\n} else {\n    node.warn(`❌ El UPDATE no funcionó, el ID ${id} sigue con enviado = ${estado}`);\n    return {\n        topic: \"SELECT id, uuid, payload, intentos FROM buffer_iot WHERE enviado = 0 ORDER BY id ASC LIMIT 1\"\n    };\n}",
         "outputs": 1,
@@ -2853,15 +2853,15 @@
         "y": 880,
         "wires": [
             [
-                "627803a1a17014a5",
-                "4020ae75706698e1"
+                "3a16cc1a3621622a",
+                "ae3051c5bf221f93"
             ]
         ]
     },
     {
-        "id": "627803a1a17014a5",
+        "id": "3a16cc1a3621622a",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Verificar registro",
         "active": true,
         "tosidebar": true,
@@ -2876,9 +2876,9 @@
         "wires": []
     },
     {
-        "id": "32d8318394c0760e",
+        "id": "88f05c6715869d86",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "function 3",
         "func": "// Verificar resultado del UPDATE - VERSIÓN CORREGIDA\nnode.warn(\"=== VERIFICACIÓN DE FILAS AFECTADAS ===\");\nnode.warn(`UPDATE para ID ${msg.buffer_id}`);\nnode.warn(`Payload recibido: ${JSON.stringify(msg.payload)}`);\n\n// En node-red-node-sqlite, el resultado a veces tiene propiedad .changes\nif (msg.payload && typeof msg.payload === 'object') {\n    // Intentar obtener el número de filas afectadas\n    const changes = msg.payload.changes || \n                    (msg.payload[0] && msg.payload[0].changes) || \n                    \"desconocido\";\n    \n    node.warn(`Filas afectadas: ${changes}`);\n    \n    if (changes === 0 || changes === \"desconocido\") {\n        node.warn(`⚠️ No se pudo confirmar si el UPDATE afectó filas`);\n        node.warn(`Array vacío = operación completada, pero sin certeza de cambios`);\n    } else {\n        node.warn(`✅ UPDATE exitoso: ${changes} fila(s) modificada(s)`);\n    }\n}\n\n// AHORA LA PARTE IMPORTANTE: Verificar realmente con un SELECT\n// Vamos a hacer una consulta para ver el estado actual del ID 3\nnode.warn(`🔍 Verificando estado real del ID ${msg.buffer_id} en la BD...`);\n\n// Crear mensaje para SELECT de verificación\nlet verifyMsg = {\n    buffer_id: msg.buffer_id,\n    intentos: msg.intentos,\n    topic: \"SELECT enviado FROM buffer_iot WHERE id = ?\",\n    payload: [msg.buffer_id]\n};\n\nreturn verifyMsg;",
         "outputs": 1,
@@ -2891,15 +2891,15 @@
         "y": 880,
         "wires": [
             [
-                "a63b6c18df82b6c7",
-                "77629f11712508db"
+                "e7121736218470ef",
+                "c4698cde4b480a28"
             ]
         ]
     },
     {
-        "id": "ce6b6b2a64d00b9e",
+        "id": "70b1114370207871",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Registros",
         "active": true,
         "tosidebar": true,
@@ -2914,9 +2914,9 @@
         "wires": []
     },
     {
-        "id": "1016f87a309841d9",
+        "id": "36ae9808cc93f4eb",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Mostrar resultados",
         "func": "node.warn(\"=== IDs ENCONTRADOS EN LA BD ===\");\nif (msg.payload && msg.payload.length > 0) {\n    msg.payload.forEach(row => {\n        node.warn(`ID: ${row.id} (tipo: ${typeof row.id})`);\n    });\n    \n    const ids = msg.payload.map(row => row.id);\n    node.warn(`IDs disponibles: ${ids.join(', ')}`);\n    \n    const row3 = msg.payload.find(row => row.id === 3);\n    if (row3) {\n        node.warn(`✅ El ID 3 SÍ existe en la BD`);\n        node.warn(`ID 3 es tipo: ${typeof row3.id}, valor: ${row3.id}`);\n        node.warn(`✅ El ID es NUMBER, debería funcionar con número.`);\n    } else {\n        node.warn(`❌ El ID 3 NO existe en la BD`);\n    }\n}\n\nnode.warn(\"🔍 Continuando con la búsqueda del siguiente pendiente...\");\n\nreturn {\n    topic: \"SELECT id, uuid, payload, intentos FROM buffer_iot WHERE enviado = 0 ORDER BY id ASC LIMIT 1\"\n};",
         "outputs": 1,
@@ -2929,14 +2929,14 @@
         "y": 760,
         "wires": [
             [
-                "b8aea3feb03b5147"
+                "408fda251f8c118a"
             ]
         ]
     },
     {
-        "id": "b8aea3feb03b5147",
+        "id": "408fda251f8c118a",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Mostrar resultados",
         "active": true,
         "tosidebar": true,
@@ -2951,9 +2951,9 @@
         "wires": []
     },
     {
-        "id": "23055284ded1282e",
+        "id": "bc2063078532e6ba",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Disparar lectura de pendiente",
         "active": true,
         "tosidebar": true,
@@ -2968,9 +2968,9 @@
         "wires": []
     },
     {
-        "id": "2b23e048a4c5c410",
+        "id": "e86845a26838aa74",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug test function 3",
         "active": true,
         "tosidebar": true,
@@ -2985,9 +2985,9 @@
         "wires": []
     },
     {
-        "id": "11b398dc608c16bb",
+        "id": "44efbc629d449f7e",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "function 4",
         "func": "// Analizar verificación del UPDATE\nnode.warn(\"=== RESULTADO DE VERIFICACIÓN ===\");\nnode.warn(`ID: ${msg.buffer_id}`);\n\nif (!msg.payload || msg.payload.length === 0) {\n    node.warn(`❌ ERROR: No se encontró el ID ${msg.buffer_id} en la BD`);\n    return null;\n}\n\nconst estado = msg.payload[0].enviado;\nnode.warn(`Estado actual del ID ${msg.buffer_id}: enviado = ${estado}`);\n\nif (estado === 1) {\n    node.warn(`✅ VERIFICADO: ID ${msg.buffer_id} está marcado como enviado`);\n    // Buscar siguiente pendiente\n    return {\n        topic: \"SELECT id, uuid, payload, intentos FROM buffer_iot WHERE enviado = 0 ORDER BY id ASC LIMIT 1\"\n    };\n} else {\n    node.warn(`❌ PROBLEMA: ID ${msg.buffer_id} sigue con enviado = ${estado}`);\n    node.warn(`El UPDATE NO funcionó - revisar permisos o estructura de la BD`);\n    \n    // Para no quedar en loop infinito, saltar este ID\n    node.warn(`⏩ Saltando ID ${msg.buffer_id} y buscando siguiente...`);\n    return {\n        topic: `SELECT id, uuid, payload, intentos FROM buffer_iot WHERE enviado = 0 AND id > ${msg.buffer_id} ORDER BY id ASC LIMIT 1`\n    };\n}",
         "outputs": 1,
@@ -3003,9 +3003,9 @@
         ]
     },
     {
-        "id": "86248da7cbacedec",
+        "id": "21bbe6b4fc651f43",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Trigger siguiente",
         "func": "node.warn(\"UPDATE confirmado → buscando siguiente pendiente\");\n\nreturn {\n    topic: `\n        SELECT id, uuid, payload, intentos \n        FROM buffer_iot \n        WHERE enviado = 0 \n        ORDER BY id ASC \n        LIMIT 1\n    `\n};",
         "outputs": 1,
@@ -3018,15 +3018,15 @@
         "y": 340,
         "wires": [
             [
-                "7a0d52ac3892c434",
-                "0c5c3d039ad05f55"
+                "9808325ee5045eb4",
+                "f1a86d3d5eace821"
             ]
         ]
     },
     {
-        "id": "7a0d52ac3892c434",
+        "id": "9808325ee5045eb4",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Trigger siguiente",
         "active": true,
         "tosidebar": true,
@@ -3041,9 +3041,9 @@
         "wires": []
     },
     {
-        "id": "c4ee3aaf85bb055d",
+        "id": "5bd0b7a722eac002",
         "type": "function",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Verificar update",
         "func": "// Verificar que el UPDATE realmente ocurrió\nreturn {\n    topic: \"SELECT enviado, intentos, fecha_envio FROM buffer_iot WHERE id = ?\",\n    payload: [Number(msg.buffer_id || 0)]\n};",
         "outputs": 1,
@@ -3056,15 +3056,15 @@
         "y": 340,
         "wires": [
             [
-                "86248da7cbacedec",
-                "35e29dedd96eeb98"
+                "21bbe6b4fc651f43",
+                "1ad34abe0d0b044d"
             ]
         ]
     },
     {
-        "id": "35e29dedd96eeb98",
+        "id": "1ad34abe0d0b044d",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Verificar update",
         "active": true,
         "tosidebar": true,
@@ -3079,9 +3079,9 @@
         "wires": []
     },
     {
-        "id": "360422a7cb564736",
+        "id": "7b9ba2251eaf7593",
         "type": "delay",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "",
         "pauseType": "delay",
         "timeout": "2",
@@ -3099,14 +3099,14 @@
         "y": 340,
         "wires": [
             [
-                "c4ee3aaf85bb055d"
+                "5bd0b7a722eac002"
             ]
         ]
     },
     {
-        "id": "04d349cfb8f8b89a",
+        "id": "84df30b0a47a49f0",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Limpiar buffer",
         "active": true,
         "tosidebar": true,
@@ -3121,9 +3121,9 @@
         "wires": []
     },
     {
-        "id": "f431562473529684",
+        "id": "13fea3e570a2d55c",
         "type": "switch",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "Funciones",
         "property": "procesamiento_activo",
         "propertyType": "global",
@@ -3142,17 +3142,17 @@
         "y": 80,
         "wires": [
             [
-                "8bd7b4e7628bf531"
+                "e60a8f8db502c951"
             ],
             [
-                "00b986e2cd4fb285"
+                "032c85d313ccb758"
             ]
         ]
     },
     {
-        "id": "00b986e2cd4fb285",
+        "id": "032c85d313ccb758",
         "type": "debug",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "name": "debug Funciones (buffer)",
         "active": true,
         "tosidebar": true,
@@ -3167,9 +3167,9 @@
         "wires": []
     },
     {
-        "id": "0c5c3d039ad05f55",
+        "id": "f1a86d3d5eace821",
         "type": "sqlite",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "mydb": "e49a1121dd1bbc8c",
         "sqlquery": "msg.topic",
         "sql": "",
@@ -3178,15 +3178,15 @@
         "y": 120,
         "wires": [
             [
-                "ddf9509a2d1c1ea0",
-                "d07834d869cc67c9"
+                "1fc0e26471f764f4",
+                "b9512f3ce22d85bf"
             ]
         ]
     },
     {
-        "id": "162d37e7aff52e7e",
+        "id": "5800df34d35df998",
         "type": "sqlite",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "mydb": "e49a1121dd1bbc8c",
         "sqlquery": "msg.topic",
         "sql": "",
@@ -3195,14 +3195,14 @@
         "y": 320,
         "wires": [
             [
-                "360422a7cb564736"
+                "7b9ba2251eaf7593"
             ]
         ]
     },
     {
-        "id": "1c116d921149756c",
+        "id": "bcc8a95bc0dbbe87",
         "type": "sqlite",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "mydb": "e49a1121dd1bbc8c",
         "sqlquery": "msg.topic",
         "sql": "",
@@ -3211,14 +3211,14 @@
         "y": 640,
         "wires": [
             [
-                "be37a5656861c393"
+                "fa745438782d1c86"
             ]
         ]
     },
     {
-        "id": "fca8825c4f4ed4fd",
+        "id": "b98193f84c4ec533",
         "type": "sqlite",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "mydb": "e49a1121dd1bbc8c",
         "sqlquery": "msg.topic",
         "sql": "",
@@ -3227,15 +3227,15 @@
         "y": 1120,
         "wires": [
             [
-                "c2db3c766a687e02",
-                "18714b1ae3fb85eb"
+                "72b760cce1d7130e",
+                "fe0afb572864e2e8"
             ]
         ]
     },
     {
-        "id": "4020ae75706698e1",
+        "id": "ae3051c5bf221f93",
         "type": "sqlite",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "mydb": "e49a1121dd1bbc8c",
         "sqlquery": "msg.topic",
         "sql": "",
@@ -3244,15 +3244,15 @@
         "y": 840,
         "wires": [
             [
-                "ce6b6b2a64d00b9e",
-                "1016f87a309841d9"
+                "70b1114370207871",
+                "36ae9808cc93f4eb"
             ]
         ]
     },
     {
-        "id": "77629f11712508db",
+        "id": "c4698cde4b480a28",
         "type": "sqlite",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "mydb": "e49a1121dd1bbc8c",
         "sqlquery": "msg.topic",
         "sql": "",
@@ -3261,15 +3261,15 @@
         "y": 860,
         "wires": [
             [
-                "2b23e048a4c5c410",
-                "11b398dc608c16bb"
+                "e86845a26838aa74",
+                "44efbc629d449f7e"
             ]
         ]
     },
     {
-        "id": "fd47843a109b5ef5",
+        "id": "914438834f85fb45",
         "type": "sqlite",
-        "z": "7f230b831953d37b",
+        "z": "8c631bbdbacc835b",
         "mydb": "e49a1121dd1bbc8c",
         "sqlquery": "msg.topic",
         "sql": "",
@@ -3278,14 +3278,14 @@
         "y": 240,
         "wires": [
             [
-                "04d349cfb8f8b89a"
+                "84df30b0a47a49f0"
             ]
         ]
     },
     {
-        "id": "ec113c8b2ea60106",
+        "id": "4a209d590699c8d5",
         "type": "change",
-        "z": "d0a0b58d43b094c9",
+        "z": "34ae6ace5a3ec19e",
         "name": "Control",
         "rules": [
             {
@@ -3305,14 +3305,14 @@
         "y": 120,
         "wires": [
             [
-                "d55203a782405b85"
+                "456f4b328fe42af7"
             ]
         ]
     },
     {
-        "id": "eb708e1a8cdc241a",
+        "id": "617968d2864d301f",
         "type": "ui_button",
-        "z": "d0a0b58d43b094c9",
+        "z": "34ae6ace5a3ec19e",
         "name": "",
         "group": "datos_group_id",
         "order": 1,
@@ -3333,15 +3333,15 @@
         "y": 120,
         "wires": [
             [
-                "ec113c8b2ea60106",
-                "a85537c977e5a59a"
+                "4a209d590699c8d5",
+                "c0272a6817db297c"
             ]
         ]
     },
     {
-        "id": "7e2775c81d919f25",
+        "id": "ddad083fb86b3e5b",
         "type": "ui_button",
-        "z": "d0a0b58d43b094c9",
+        "z": "34ae6ace5a3ec19e",
         "name": "",
         "group": "datos_group_id",
         "order": 2,
@@ -3362,15 +3362,15 @@
         "y": 180,
         "wires": [
             [
-                "ec113c8b2ea60106",
-                "87c934778ce93592"
+                "4a209d590699c8d5",
+                "2ec7fd12acb24e05"
             ]
         ]
     },
     {
-        "id": "3d98e9e82e86b3b4",
+        "id": "9c3067bed8046091",
         "type": "inject",
-        "z": "d0a0b58d43b094c9",
+        "z": "34ae6ace5a3ec19e",
         "name": "Inicializar activo por defecto",
         "props": [
             {
@@ -3390,14 +3390,14 @@
         "y": 60,
         "wires": [
             [
-                "ec113c8b2ea60106"
+                "4a209d590699c8d5"
             ]
         ]
     },
     {
-        "id": "a85537c977e5a59a",
+        "id": "c0272a6817db297c",
         "type": "debug",
-        "z": "d0a0b58d43b094c9",
+        "z": "34ae6ace5a3ec19e",
         "name": "debug Activar dispositivo",
         "active": true,
         "tosidebar": true,
@@ -3412,9 +3412,9 @@
         "wires": []
     },
     {
-        "id": "87c934778ce93592",
+        "id": "2ec7fd12acb24e05",
         "type": "debug",
-        "z": "d0a0b58d43b094c9",
+        "z": "34ae6ace5a3ec19e",
         "name": "debug Desctivar dispositivo",
         "active": true,
         "tosidebar": true,
@@ -3429,9 +3429,9 @@
         "wires": []
     },
     {
-        "id": "d55203a782405b85",
+        "id": "456f4b328fe42af7",
         "type": "debug",
-        "z": "d0a0b58d43b094c9",
+        "z": "34ae6ace5a3ec19e",
         "name": "debug Control",
         "active": true,
         "tosidebar": true,
