@@ -910,7 +910,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 820,
+        "x": 800,
         "y": 220,
         "wires": [
             [],
