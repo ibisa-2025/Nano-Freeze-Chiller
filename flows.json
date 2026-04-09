@@ -1958,7 +1958,7 @@
         "id": "8bae4d4d786576ae",
         "type": "exec",
         "z": "c42e560af7a7f645",
-        "command": "ls /dev/ttyACM* /dev/ttyUSB* /dev/ttyS0 /dev/ttyCH9344USB* 2>/dev/null",
+        "command": "ls /dev/ttyACM* /dev/ttyUSB* /dev/ttyS* /dev/ttyCH9344USB* /dev/ttyAMA* /dev/ttyCOM* /dev/ttyXRUSB* /dev/ttyWCH* /dev/ttyOP* 2>/dev/null",
         "addpay": false,
         "append": "",
         "useSpawn": "false",
@@ -2009,7 +2009,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1400,
+        "x": 1360,
         "y": 380,
         "wires": [
             []
