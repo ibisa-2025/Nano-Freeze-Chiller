@@ -171,7 +171,7 @@
         "id": "298b7e953ed62ce1",
         "type": "mqtt-broker",
         "name": "Servidor MQTT",
-        "broker": "awbagdz13ax6c-ats.iot.us-east-2.amazonaws.com",
+        "broker": "d09056432urhig8iagtsu-ats.iot.us-east-2.amazonaws.com",
         "port": "8883",
         "tls": "9917a1879cf30902",
         "clientid": "",
