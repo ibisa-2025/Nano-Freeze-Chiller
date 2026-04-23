@@ -3362,7 +3362,7 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 640,
+        "x": 620,
         "y": 120,
         "wires": []
     }
